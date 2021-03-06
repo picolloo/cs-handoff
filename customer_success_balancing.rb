@@ -21,8 +21,7 @@ class CustomerSuccessBalancing
       }
     end
 
-    employee = customers_by_employee.max_by {|employee| employee[:received_customers].length }
-    employee[:employee_id]
+    get_employee_id_with_max_customers(customers_by_employee)
   end
 
   def get_available_employees(employees, available_employees_ids)
@@ -31,6 +30,16 @@ class CustomerSuccessBalancing
 
   def sort_employees_by_score(employees)
     employees.sort_by {|employee| employee[:score]}
+  end
+
+  def get_employee_id_with_max_customers(customers_by_employee)    
+    max_received_customers = customers_by_employee.map { |employee| employee[:received_customers].length }.max
+    employees_with_max_customers = customers_by_employee.select do |employee| 
+      employee[:received_customers].length == max_received_customers
+    end
+
+    return employees_with_max_customers.first&.fetch(:employee_id, 0) if employees_with_max_customers.length == 1
+    return 0
   end
 end
 
@@ -47,7 +56,7 @@ class CustomerSuccessBalancingTests < Minitest::Test
     css = array_to_map([11, 21, 31, 3, 4, 5])
     customers = array_to_map( [10, 10, 10, 20, 20, 30, 30, 30, 20, 60])
     balancer = CustomerSuccessBalancing.new(css, customers, [])
-    assert_equal 1, balancer.execute
+    assert_equal 0, balancer.execute
   end
 
   def test_scenario_three
@@ -64,7 +73,7 @@ class CustomerSuccessBalancingTests < Minitest::Test
 
   def test_scenario_four
     balancer = CustomerSuccessBalancing.new(array_to_map([1, 2, 3, 4, 5, 6]), array_to_map([10, 10, 10, 20, 20, 30, 30, 30, 20, 60]), [])
-    assert_equal 1, balancer.execute
+    assert_equal 0, balancer.execute
   end
 
   def test_scenario_five
@@ -74,7 +83,7 @@ class CustomerSuccessBalancingTests < Minitest::Test
 
   def test_scenario_six
     balancer = CustomerSuccessBalancing.new(array_to_map([100, 99, 88, 3, 4, 5]), array_to_map([10, 10, 10, 20, 20, 30, 30, 30, 20, 60]), [1, 3, 2])
-    assert_equal balancer.execute, 4
+    assert_equal balancer.execute, 0
   end
 
   def test_scenario_seven
