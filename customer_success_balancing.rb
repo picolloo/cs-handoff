@@ -11,35 +11,36 @@ class CustomerSuccessBalancing
   def execute
     available_employees = get_available_employees(@customer_success, @customer_success_away)
     sorted_available_employees = sort_employees_by_score(available_employees)
-    
-    customers_by_employee = sorted_available_employees.map do |employee|
-      received_customers =  @customers.extract! { |customer| customer[:score] <= employee[:score]}
 
-      {
-        employee_id: employee[:id],
-        received_customers: received_customers
-      }
+    customers_by_employee = sorted_available_employees.map do |employee|
+      received_customers =  @customers.extract! do |customer|
+        customer[:score] <= employee[:score]
+      end
+
+      { employee_id: employee[:id], received_customers: received_customers }
     end
 
     get_employee_id_with_max_customers(customers_by_employee)
   end
 
-  def get_available_employees(employees, available_employees_ids)
-    employees.select { |employee| not available_employees_ids.include? employee[:id]  }
+  def get_available_employees(employees, unavailable_employees_ids)
+    employees.reject { |employee| unavailable_employees_ids.include? employee[:id] }
   end
 
   def sort_employees_by_score(employees)
-    employees.sort_by {|employee| employee[:score]}
+    employees.sort_by { |employee| employee[:score] }
   end
 
-  def get_employee_id_with_max_customers(customers_by_employee)    
+  def get_employee_id_with_max_customers(customers_by_employee)
     max_received_customers = customers_by_employee.map { |employee| employee[:received_customers].length }.max
-    employees_with_max_customers = customers_by_employee.select do |employee| 
+    employees_with_max_customers = customers_by_employee.select do |employee|
       employee[:received_customers].length == max_received_customers
     end
 
-    return employees_with_max_customers.first&.fetch(:employee_id, 0) if employees_with_max_customers.length == 1
-    return 0
+    return 0 if employees_with_max_customers.empty? ||
+                employees_with_max_customers.length > 1
+
+    employees_with_max_customers.first[:employee_id]
   end
 end
 
